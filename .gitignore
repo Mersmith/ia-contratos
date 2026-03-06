@@ -4,6 +4,7 @@
 # ─── Carpetas de PDFs (no subir archivos pesados al repo) ───
 analizar/
 preview/
+campos/
 
 # ─── Python ───
 __pycache__/

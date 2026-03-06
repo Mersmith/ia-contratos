@@ -25,7 +25,10 @@ CREATE TABLE IF NOT EXISTS contratos_digitalizados (
     proyecto         VARCHAR(255)  NOT NULL COMMENT 'Nombre del proyecto inmobiliario (ej: "Villa del Sol")',
     manzana          VARCHAR(100)  NOT NULL COMMENT 'Manzana del lote dentro del proyecto (ej: "A", "B1")',
     lote             VARCHAR(100)  NOT NULL COMMENT 'Número o código del lote (ej: "12", "23-A")',
-    area             DECIMAL(10,2) NULL     COMMENT 'Área del lote en m² (puede ser NULL si aún no se extrae)',
+    area             VARCHAR(100) NULL     COMMENT 'Área del lote en m² (puede ser NULL si aún no se extrae)',
+    alicuota         VARCHAR(100) NULL     COMMENT 'El porcentaje de participación del lote en el proyecto',
+    fecha_suscripcion_contrato         VARCHAR(100) NULL     COMMENT 'La fecha de suscripción del contrato',
+    fecha_pactada_entrega         VARCHAR(100) NULL     COMMENT 'Fecha originalmente pactada para la entrega de la unidad inmobiliaria según el contrato',
 
     -- Datos del archivo fuente
     ruta_archivo     TEXT          NOT NULL COMMENT 'Ruta o URL al archivo PDF/imagen del contrato original',
@@ -43,6 +46,10 @@ CREATE TABLE IF NOT EXISTS contratos_digitalizados (
     -- Datos crudos retornados por la IA (para auditoría o reproceso)
     json_completo    JSON          NULL
                                    COMMENT 'JSON completo devuelto por la IA; útil para depuración y reproceso',
+
+    -- Mejor profesional: Guardar el texto extraído por OCR
+    texto_ocr        LONGTEXT      NULL
+                                   COMMENT 'Texto extraído por OCR de todas las páginas del PDF. Evita reprocesar el OCR.',
 
     -- Auditoría de tiempo
     fecha_extraccion TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
