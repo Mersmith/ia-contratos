@@ -5,6 +5,7 @@
 analizar/
 preview/
 campos/
+modelos/
 
 # ─── Python ───
 __pycache__/

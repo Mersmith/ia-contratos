@@ -51,6 +51,11 @@ CREATE TABLE IF NOT EXISTS contratos_digitalizados (
     texto_ocr        LONGTEXT      NULL
                                    COMMENT 'Texto extraído por OCR de todas las páginas del PDF. Evita reprocesar el OCR.',
 
+    -- Control de costos de IA
+    tokens_entrada   INT           DEFAULT 0 COMMENT 'Cantidad de tokens enviados a la IA (incluye imágenes)',
+    tokens_salida    INT           DEFAULT 0 COMMENT 'Cantidad de tokens generados por la IA',
+    costo_estimado_usd DECIMAL(10, 5) DEFAULT 0 COMMENT 'Costo aproximado en USD de la operación',
+
     -- Auditoría de tiempo
     fecha_extraccion TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
                                    COMMENT 'Fecha y hora en que se procesó/digitalizó el contrato',
