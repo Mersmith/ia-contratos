@@ -143,7 +143,8 @@ def extraer_con_vision_premium(ruta_pdf):
             "ANEXO 1", "MEMORIA DESCRIPTIVA", "INFORMACIÓN DEL CLIENTE", 
             "CALENDARIO DE PAGOS", "PRECIO Y FORMA DE PAGO",
             "DE LA FORMALIZACIÓN DEL CONTRATO", "PLAZO DE ENTREGA",
-            "DE LA ENTREGA", "ENTREGA FÍSICA", "CONTRATO DEFINITIVO"
+            "DE LA ENTREGA", "ENTREGA FÍSICA", "CONTRATO DEFINITIVO",
+            "SEPTIMO", "ENTREGA DE LA POSESION", "POSESION", "PLAZO"
         ]
         
         for i, pag in enumerate(paginas_baja):
@@ -178,28 +179,34 @@ def extraer_con_vision_premium(ruta_pdf):
                 4. FECHA SUSCRIPCION: Donde están las firmas al final del documento (ej: "Lima, 10 de octubre de 2023") o en el encabezado.
                 5. FECHA PACTADA ENTREGA — CAMPO CRÍTICO. Existen 5 patrones distintos según el modelo de contrato:
                 
-                   PATRÓN A — Cláusula QUINTO 5.1 (Viña del Mar / Finca Las Lomas):
-                   Texto: "LAS PARTES acuerdan que la entrega física de la alícuota... se realizara en [MES] de [AÑO]."
+                   PATRÓN A — Cláusula QUINTO/SEXTO (Viña del Mar / Finca Las Lomas / Lugo):
+                   Texto similar a: "LAS PARTES acuerdan que la entrega física de la alícuota... se realizara/realizará en [MES] de [AÑO]."
                    → Extrae el mes y año. Ej: "diciembre de 2024"
                    
-                   PATRÓN B — Cláusula QUINTO 5.1 (Altos del Prado / Grocio Prado):
-                   Texto: "LAS PARTES acuerdan que la entrega física de LA ALICUOTA se realizará a partir de [MES] de [AÑO]"
+                   PATRÓN B — Cláusula QUINTO/SEXTO (Altos del Prado / Grocio Prado):
+                   Texto similar a: "LAS PARTES acuerdan que la entrega física de LA ALICUOTA se realizara/realizará a partir de [MES] de [AÑO]"
                    → Extrae el mes y año. Ej: "diciembre de 2027"
                    
                    PATRÓN C — Cláusula SEXTA (Lugo / Lotes del Perú):
-                   Texto: "LAS PARTES acuerdan que la entrega del ALICUOTA objeto de este contrato se realizara en [MES] del año [AÑO]"
+                   Texto similar a: "LAS PARTES acuerdan que la entrega del ALICUOTA objeto de este contrato se realizara/realizará en [MES] del año [AÑO]"
                    → Extrae el mes y año. Ej: "diciembre del año 2021"
                    
                    PATRÓN D — Tabla Anexo 1, sección "VII. DE LA ENTREGA" (Altos del Valle):
                    Campo: "Plazo de Entrega" seguido de un valor tipo: "año 2028 mes diciembre"
-                   → Extrae ese valor. Ej: "año 2028 mes diciembre"
+                   → Extrae el valor exacto. Ej: "año 2028 mes diciembre"
                    
-                   PATRÓN E — Tabla Anexo 1, sección "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO" (Altos del Prado):
+                   PATRÓN E — Tabla Anexo 1, sección "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO" (Altos del Prado / Finca Las Lomas):
                    Campo: "Fecha de firma de contrato definitivo" seguido de una fecha como "treinta y uno de diciembre del 2027 (31/12/2027)"
-                   → Extrae esa fecha. Ej: "31/12/2027"
+                   → Extrae la fecha completa. Ej: "31/12/2027"
+
+                   PATRÓN F — Cláusula SÉPTIMO (Pontevedra / Posesión):
+                   Texto similar a: "SEPTIMO: ENTREGA DE LA POSESIÓN ... entregará la posesión de LA ALICUOTA ... el [DIA] [MES] del [AÑO]"
+                   → Extrae la fecha completa. Ej: "30 diciembre del 2021"
                    
-                   ⚠️ Si una cláusula dice "se realizará en la fecha indicada en el ANEXO 1", busca el valor real en los cuadros del Anexo 1.
-                   ⚠️ Si no encuentras ningún patrón, devuelve null. NUNCA inventes una fecha.
+                   ⚠️ NOTA: Sé flexible con "realizara" y "realizará".
+                   ⚠️ NOTA: Sé flexible con "SÉPTIMO" o "SEPTIMO".
+                   ⚠️ NOTA: Si una cláusula dice "se realizará en la fecha indicada en el ANEXO 1", busca el valor real en los cuadros del Anexo 1.
+                   ⚠️ NOTA: Si no encuentras ningún patrón, devuelve null. NUNCA inventes una fecha.
                    
                 6. PROPIETARIOS: Nombre y DNI del punto II del Anexo 1 (Información del Cliente). Lista TODOS los copropietarios que aparezcan.
                 

@@ -31,9 +31,11 @@ contratos_digitalizados
     | **B**  | Altos del Prado / Grocio    | QUINTO 5.1                     | "LAS PARTES acuerdan que la entrega física de LA ALICUOTA **se realizará a partir de [MES] de [AÑO]**" | `diciembre de 2027`      |
     | **C**  | Lugo / Lotes del Perú       | SEXTA                          | "LAS PARTES acuerdan que la entrega del ALICUOTA... **se realizara en [MES] del año [AÑO]**" | `diciembre del año 2021`  |
     | **D**  | Altos del Valle             | Anexo 1 — VII. DE LA ENTREGA   | Campo: **"Plazo de Entrega"** con valor tipo `año XXXX mes [MES]`                    | `año 2028 mes diciembre`      |
-    | **E**  | Altos del Prado             | Anexo 1 — VIII. FIRMA DEFINITIVO | Campo: **"Fecha de firma de contrato definitivo"** con fecha literal o numérica    | `31/12/2027`                  |
+    | **E**  | Altos del Prado / Finca Las Lomas | Anexo 1 — VIII. FIRMA DEFINITIVO | Campo: **"Fecha de firma de contrato definitivo"** con fecha literal o numérica    | `30/06/2027`                  |
+    | **F**  | Pontevedra / Posesión        | SÉPTIMO: ENTREGA DE LA POSESIÓN  | Frase: "...entregará la posesión de LA ALICUOTA ... el **[DIA] [MES] del [AÑO]**" | `30 diciembre del 2021`        |
 
     ⚠️ Si una cláusula dice "se realizará en la fecha indicada en el ANEXO 1", el valor real está en los cuadros del Anexo 1 (Patrón D o E).
+    ⚠️ Ser flexible con "SÉPTIMO" o "SEPTIMO".
     ⚠️ Si no se encuentra ningún patrón, devolver null. NUNCA inventar una fecha.
 
 contrato_propietarios 
