@@ -1,0 +1,22 @@
+# ─── Credenciales y configuración local ───
+.env
+
+# ─── Carpetas de PDFs (no subir archivos pesados al repo) ───
+analizar/
+preview/
+
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ─── Entornos virtuales ───
+venv/
+.venv/
+env/
+
+# ─── Archivos comprimidos ───
+*.rar
+*.zip
+*.7z
