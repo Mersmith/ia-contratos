@@ -138,11 +138,12 @@ def extraer_con_vision_premium(ruta_pdf):
         total_pags = len(paginas_baja)
         
         indices_clave = [0, 1] # Siempre incluimos las primeras dos páginas por defecto
-        # Radar detecta páginas de datos y cláusula de entrega
+        # Radar detecta páginas de datos y cláusulas de entrega/formalización
         keywords = [
             "ANEXO 1", "MEMORIA DESCRIPTIVA", "INFORMACIÓN DEL CLIENTE", 
             "CALENDARIO DE PAGOS", "PRECIO Y FORMA DE PAGO",
-            "DE LA FORMALIZACIÓN DEL CONTRATO", "PLAZO DE ENTREGA"
+            "DE LA FORMALIZACIÓN DEL CONTRATO", "PLAZO DE ENTREGA",
+            "DE LA ENTREGA", "ENTREGA FÍSICA", "CONTRATO DEFINITIVO"
         ]
         
         for i, pag in enumerate(paginas_baja):
@@ -170,15 +171,37 @@ def extraer_con_vision_premium(ruta_pdf):
                 Recibirás imágenes de páginas específicas de un contrato inmobiliario. 
                 Tu misión es extraer datos con 100% de precisión.
                 
-                REGLAS DE EXTRACCIÓN (Basadas en TABLA_ENTRENAR.md y Modelos Visuales):
-                1. PROYECTO: Nombre comercial (Ej: ALTOS DEL PRADO, LUGO, LOTES DEL PERU).
+                REGLAS DE EXTRACCIÓN (BASADAS EN MODELOS VISUALES DE AYBAR CORP):
+                1. PROYECTO: Nombre comercial visible en logo o encabezado (ej: ALTOS DEL PRADO, LUGO, LOTES DEL PERU, VIÑA DEL MAR, ALTOS DEL VALLE, FINCA LAS LOMAS).
                 2. MANZANA/LOTE: Punto V del Anexo 1 o Memoria Descriptiva.
-                3. ÁREA Y ALÍCUOTA: Sección 'MEMORIA DESCRIPTIVA' (Dato numérico y %).
-                4. FECHA SUSCRIPCION: Al final donde dice 'Lima, [FECHA]' o en el encabezado.
-                5. FECHA PACTADA ENTREGA (CRÍTICO): 
-                   - Opción A: Busca en la QUINTA o SEXTA CLÁUSULA (Formalización). Frase: 'Las partes acuerdan que la entrega física...'.
-                   - Opción B: Busca en el ANEXO 1 o tablas finales. Campo: 'Plazo de Entrega' (Ejem: 'año 2028 mes diciembre').
-                6. PROPIETARIOS: Nombre y DNI del punto II del Anexo 1. (Extrae TODOS los que aparezcan).
+                3. ÁREA Y ALÍCUOTA: Sección 'MEMORIA DESCRIPTIVA'.
+                4. FECHA SUSCRIPCION: Donde están las firmas al final del documento (ej: "Lima, 10 de octubre de 2023") o en el encabezado.
+                5. FECHA PACTADA ENTREGA — CAMPO CRÍTICO. Existen 5 patrones distintos según el modelo de contrato:
+                
+                   PATRÓN A — Cláusula QUINTO 5.1 (Viña del Mar / Finca Las Lomas):
+                   Texto: "LAS PARTES acuerdan que la entrega física de la alícuota... se realizara en [MES] de [AÑO]."
+                   → Extrae el mes y año. Ej: "diciembre de 2024"
+                   
+                   PATRÓN B — Cláusula QUINTO 5.1 (Altos del Prado / Grocio Prado):
+                   Texto: "LAS PARTES acuerdan que la entrega física de LA ALICUOTA se realizará a partir de [MES] de [AÑO]"
+                   → Extrae el mes y año. Ej: "diciembre de 2027"
+                   
+                   PATRÓN C — Cláusula SEXTA (Lugo / Lotes del Perú):
+                   Texto: "LAS PARTES acuerdan que la entrega del ALICUOTA objeto de este contrato se realizara en [MES] del año [AÑO]"
+                   → Extrae el mes y año. Ej: "diciembre del año 2021"
+                   
+                   PATRÓN D — Tabla Anexo 1, sección "VII. DE LA ENTREGA" (Altos del Valle):
+                   Campo: "Plazo de Entrega" seguido de un valor tipo: "año 2028 mes diciembre"
+                   → Extrae ese valor. Ej: "año 2028 mes diciembre"
+                   
+                   PATRÓN E — Tabla Anexo 1, sección "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO" (Altos del Prado):
+                   Campo: "Fecha de firma de contrato definitivo" seguido de una fecha como "treinta y uno de diciembre del 2027 (31/12/2027)"
+                   → Extrae esa fecha. Ej: "31/12/2027"
+                   
+                   ⚠️ Si una cláusula dice "se realizará en la fecha indicada en el ANEXO 1", busca el valor real en los cuadros del Anexo 1.
+                   ⚠️ Si no encuentras ningún patrón, devuelve null. NUNCA inventes una fecha.
+                   
+                6. PROPIETARIOS: Nombre y DNI del punto II del Anexo 1 (Información del Cliente). Lista TODOS los copropietarios que aparezcan.
                 
                 FORMATO DE RESPUESTA JSON:
                 {
