@@ -110,3 +110,50 @@ CREATE TABLE IF NOT EXISTS contrato_propietarios (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci
   COMMENT='Propietarios y copropietarios de cada contrato. Un contrato puede tener 1 o más filas aquí.';
+
+
+CONSULTA:
+SELECT 
+    c.id                    AS `ID Contrato`,
+    c.proyecto              AS `Proyecto`,
+    c.manzana               AS `Mz`,
+    c.lote                  AS `Lote`,
+    c.area                  AS `Área`,
+    c.alicuota              AS `Alícuota`,
+    c.fecha_suscripcion_contrato AS `Fecha Suscripción`,
+    c.fecha_pactada_entrega AS `Fecha Entrega Pactada`,
+    c.estado                AS `Estado Proceso`,
+    c.costo_estimado_usd    AS `Costo IA ($)`,
+
+    -- Propietarios
+    p1.nombre_completo      AS `Propietario 1`,
+    p1.dni                  AS `DNI 1`,
+
+    p2.nombre_completo      AS `Propietario 2`,
+    p2.dni                  AS `DNI 2`,
+
+    p3.nombre_completo      AS `Propietario 3`,
+    p3.dni                  AS `DNI 3`,
+
+    p4.nombre_completo      AS `Propietario 4`,
+    p4.dni                  AS `DNI 4`,
+
+    c.ruta_archivo          AS `Ruta Archivo`
+
+FROM contratos_digitalizados AS c
+
+LEFT JOIN contrato_propietarios AS p1 
+       ON p1.contrato_id = c.id AND p1.orden = 1
+
+LEFT JOIN contrato_propietarios AS p2 
+       ON p2.contrato_id = c.id AND p2.orden = 2
+
+LEFT JOIN contrato_propietarios AS p3 
+       ON p3.contrato_id = c.id AND p3.orden = 3
+
+LEFT JOIN contrato_propietarios AS p4 
+       ON p4.contrato_id = c.id AND p4.orden = 4
+
+WHERE c.tipo_documento = 'contrato'
+
+ORDER BY c.id DESC;
