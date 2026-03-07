@@ -133,8 +133,8 @@ def extraer_con_vision_premium(ruta_pdf):
     # --- PROCESO PREMIUM (Solo si pasó el filtro) ---
     print(f"  [📄] Escaneando páginas para detectar información clave (Radar)...")
     try:
-        # Convertimos todo el PDF a resolución media (100 DPI) para buscar palabras clave (Radar)
-        paginas_baja = convert_from_path(ruta_pdf, dpi=100, poppler_path=POPPLER_PATH)
+        # Convertimos todo el PDF a resolución media (130 DPI) para buscar palabras clave (Radar)
+        paginas_baja = convert_from_path(ruta_pdf, dpi=130, poppler_path=POPPLER_PATH)
         total_pags = len(paginas_baja)
         
         indices_clave = [0, 1] # Siempre incluimos las primeras dos páginas por defecto
@@ -145,7 +145,8 @@ def extraer_con_vision_premium(ruta_pdf):
             "FORMALIZACIÓN", "PLAZO DE ENTREGA",
             "DE LA ENTREGA", "ENTREGA FÍSICA", "CONTRATO DEFINITIVO",
             "SÉPTIMO", "SEPTIMO", "POSESION", "POSESIÓN", "PLAZO",
-            "VIGENCIA", "FIRMA DEL CONTRATO", "VIII", "VII", "VIVA NORTE"
+            "VIGENCIA", "FIRMA DEL CONTRATO", "VIII", "VII", "VIVA NORTE",
+            "INFORMACIÓN GENERAL", "FECHA DE FIRMA", "DEFINITIVO"
         ]
         
         for i, pag in enumerate(paginas_baja):
@@ -164,34 +165,31 @@ def extraer_con_vision_premium(ruta_pdf):
 
         indices_clave = sorted(list(set(indices_clave))) # Ordenar y quitar duplicados
         
-        # Ahora convertimos SOLO las páginas detectadas a ALTA resolución (300 DPI) para la IA
+        # Ahora convertimos SOLO las páginas detectadas a ALTA resolución (200-300 DPI) para la IA
         print(f"  [📸] Convirtiendo {len(indices_clave)} páginas detectadas a alta resolución...")
         payload_messages = [
             {
                 "role": "system",
                 "content": """Eres el analista experto de AYBAR CORP S.A.C. 
-                Recibirás imágenes de páginas específicas de un contrato inmobiliario. 
+                Recibirás imágenes de páginas específicas de un contrato inmobiliario (Anexos, Cláusulas y Firmas).
                 Tu misión es extraer datos con 100% de precisión.
                 
                 REGLAS DE EXTRACCIÓN (BASADAS EN MODELOS VISUALES DE AYBAR CORP):
                 1. PROYECTO: Nombre comercial visible en logo o encabezado (ej: ALTOS DEL PRADO, LUGO, LOTES DEL PERU, VIÑA DEL MAR, ALTOS DEL VALLE, FINCA LAS LOMAS).
                 2. MANZANA/LOTE: Punto V del Anexo 1 o Memoria Descriptiva.
-                3. ÁREA Y ALÍCUOTA: Sección 'MEMORIA DESCRIPTIVA'.
+                3. ÁREA Y ALÍCUOTA: Sección 'MEMORIA DESCRIPTIVA' o Punto V del Anexo 1.
                 4. FECHA SUSCRIPCION: Donde están las firmas al final del documento (ej: "Lima, 10 de octubre de 2023") o en el encabezado.
-                5. FECHA PACTADA ENTREGA — CAMPO CRÍTICO.Existen múltiples patrones visuales según el flujo del contrato:
+                5. FECHA ENTREGA (fecha_entrega) — CAMPO CRÍTICO. 
+                   Esta es la fecha pactada originalmente para la entrega. Existem múltiples patrones:
                 
-                   PATRÓN — Cláusulas de formalización (Lugo, Viña, Prado, Las Lomas):
-                   Texto similar a: "se realizara/realizará en [MES] de [AÑO]" o "a partir de [MES] de [AÑO]".
+                   PATRÓN — Cuadro Anexo 1 - Sección VIII (Ej: FINCA LAS LOMAS, ALTOS DEL PRADO):
+                   Busca la tabla: "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO".
+                   A su derecha verás una fecha como: "treinta de junio del 2027 (30/06/2027)".
+                   → ¡ESTE VALOR ES LA fecha_entrega! Ej: "30/06/2027".
+                   
+                   PATRÓN — Cláusulas de formalización (Lugo, Viña, Prado):
+                   Texto similar a: "se realizara en [MES] de [AÑO]" o "a partir de [MES] de [AÑO]".
                    → Extrae el valor temporal. Ej: "diciembre de 2024"
-                   
-                   PATRÓN — Referencia a Anexo (Grocio Prado, Las Lomas):
-                   Si el texto dice: "se realizará en la fecha indicada en el ANEXO 1" o "punto VIII del ANEXO 1".
-                   → ¡NO BUSQUES FECHA EN ESTE PÁRRAFO! Ve directamente a la tabla del ANEXO 1 al final del documento.
-                   
-                   PATRÓN — Cuadro Anexo 1 - Sección VIII (Muy común en FINCA LAS LOMAS):
-                   Busca la tabla que dice: "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO".
-                   A su derecha verás una fecha tipo: "treinta de junio del 2027 (30/06/2027)".
-                   → ¡EXTRÁELO! Este valor es la DATE PACTADA ENTREGA. Ej: "30/06/2027".
                    
                    PATRÓN — Cuadro Anexo 1 - Sección VII (Altos del Valle):
                    Campo: "Plazo de Entrega" con valor tipo "año 2028 mes diciembre".
@@ -201,12 +199,11 @@ def extraer_con_vision_premium(ruta_pdf):
                    Texto: "entregará la posesión de LA ALICUOTA ... el [DIA] [MES] del [AÑO]"
                    → Ej: "30 diciembre del 2021"
                    
-                   ⚠️ IMPORTANTE: "Fecha de firma de contrato definitivo" en el cuadro del Anexo 1 NO es la suscripción de hoy, es la FECHA DE ENTREGA PACTADA.
-                   ⚠️ Si ves la palabra "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO", toma ese valor para este campo (fecha_pactada_entrega).
-                   ⚠️ Sé flexible con "SÉPTIMO", "SEPTIMO", "realizara" y "realizará".
-                   ⚠️ Si no encuentras ningún patrón real, devuelve null.
-                   
-                6. PROPIETARIOS: Nombre y DNI del punto II del Anexo 1 (Información del Cliente). Lista TODOS los copropietarios que aparezcan.
+                ⚠️ IMPORTANTE: En el modelo de FINCA LAS LOMAS, ignora las menciones de "Anexo 1" en la página 2 y busca directamente el CUADRO VIII al final.
+                ⚠️ "Fecha de firma de contrato definitivo" en el Anexo 1 NO es la suscripción de hoy, es la FECHA DE ENTREGA PACTADA.
+                ⚠️ Si no encuentras ningún patrón real, devuelve null.
+                
+                6. PROPIETARIOS: Nombre y DNI del punto II del Anexo 1 (Información del Cliente). Lista TODOS los copropietarios.
                 
                 FORMATO DE RESPUESTA JSON:
                 {
