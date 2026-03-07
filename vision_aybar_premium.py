@@ -133,18 +133,19 @@ def extraer_con_vision_premium(ruta_pdf):
     # --- PROCESO PREMIUM (Solo si pasó el filtro) ---
     print(f"  [📄] Escaneando páginas para detectar información clave (Radar)...")
     try:
-        # Convertimos todo el PDF a baja resolución (75 DPI) solo para buscar palabras clave
-        paginas_baja = convert_from_path(ruta_pdf, dpi=75, poppler_path=POPPLER_PATH)
+        # Convertimos todo el PDF a resolución media (100 DPI) para buscar palabras clave (Radar)
+        paginas_baja = convert_from_path(ruta_pdf, dpi=100, poppler_path=POPPLER_PATH)
         total_pags = len(paginas_baja)
         
         indices_clave = [0, 1] # Siempre incluimos las primeras dos páginas por defecto
         # Radar detecta páginas de datos y cláusulas de entrega/formalización
         keywords = [
-            "ANEXO 1", "MEMORIA DESCRIPTIVA", "INFORMACIÓN DEL CLIENTE", 
-            "CALENDARIO DE PAGOS", "PRECIO Y FORMA DE PAGO",
-            "DE LA FORMALIZACIÓN DEL CONTRATO", "PLAZO DE ENTREGA",
+            "ANEXO", "MEMORIA", "INFORMACIÓN DEL CLIENTE", 
+            "CALENDARIO", "PRECIO", "FORMA DE PAGO",
+            "FORMALIZACIÓN", "PLAZO DE ENTREGA",
             "DE LA ENTREGA", "ENTREGA FÍSICA", "CONTRATO DEFINITIVO",
-            "SEPTIMO", "ENTREGA DE LA POSESION", "POSESION", "PLAZO"
+            "SÉPTIMO", "SEPTIMO", "POSESION", "POSESIÓN", "PLAZO",
+            "VIGENCIA", "FIRMA DEL CONTRATO", "VIII", "VII", "VIVA NORTE"
         ]
         
         for i, pag in enumerate(paginas_baja):
@@ -177,36 +178,33 @@ def extraer_con_vision_premium(ruta_pdf):
                 2. MANZANA/LOTE: Punto V del Anexo 1 o Memoria Descriptiva.
                 3. ÁREA Y ALÍCUOTA: Sección 'MEMORIA DESCRIPTIVA'.
                 4. FECHA SUSCRIPCION: Donde están las firmas al final del documento (ej: "Lima, 10 de octubre de 2023") o en el encabezado.
-                5. FECHA PACTADA ENTREGA — CAMPO CRÍTICO. Existen 5 patrones distintos según el modelo de contrato:
+                5. FECHA PACTADA ENTREGA — CAMPO CRÍTICO.Existen múltiples patrones visuales según el flujo del contrato:
                 
-                   PATRÓN A — Cláusula QUINTO/SEXTO (Viña del Mar / Finca Las Lomas / Lugo):
-                   Texto similar a: "LAS PARTES acuerdan que la entrega física de la alícuota... se realizara/realizará en [MES] de [AÑO]."
-                   → Extrae el mes y año. Ej: "diciembre de 2024"
+                   PATRÓN — Cláusulas de formalización (Lugo, Viña, Prado, Las Lomas):
+                   Texto similar a: "se realizara/realizará en [MES] de [AÑO]" o "a partir de [MES] de [AÑO]".
+                   → Extrae el valor temporal. Ej: "diciembre de 2024"
                    
-                   PATRÓN B — Cláusula QUINTO/SEXTO (Altos del Prado / Grocio Prado):
-                   Texto similar a: "LAS PARTES acuerdan que la entrega física de LA ALICUOTA se realizara/realizará a partir de [MES] de [AÑO]"
-                   → Extrae el mes y año. Ej: "diciembre de 2027"
+                   PATRÓN — Referencia a Anexo (Grocio Prado, Las Lomas):
+                   Si el texto dice: "se realizará en la fecha indicada en el ANEXO 1" o "punto VIII del ANEXO 1".
+                   → ¡NO BUSQUES FECHA EN ESTE PÁRRAFO! Ve directamente a la tabla del ANEXO 1 al final del documento.
                    
-                   PATRÓN C — Cláusula SEXTA (Lugo / Lotes del Perú):
-                   Texto similar a: "LAS PARTES acuerdan que la entrega del ALICUOTA objeto de este contrato se realizara/realizará en [MES] del año [AÑO]"
-                   → Extrae el mes y año. Ej: "diciembre del año 2021"
+                   PATRÓN — Cuadro Anexo 1 - Sección VIII (Muy común en FINCA LAS LOMAS):
+                   Busca la tabla que dice: "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO".
+                   A su derecha verás una fecha tipo: "treinta de junio del 2027 (30/06/2027)".
+                   → ¡EXTRÁELO! Este valor es la DATE PACTADA ENTREGA. Ej: "30/06/2027".
                    
-                   PATRÓN D — Tabla Anexo 1, sección "VII. DE LA ENTREGA" (Altos del Valle):
-                   Campo: "Plazo de Entrega" seguido de un valor tipo: "año 2028 mes diciembre"
-                   → Extrae el valor exacto. Ej: "año 2028 mes diciembre"
+                   PATRÓN — Cuadro Anexo 1 - Sección VII (Altos del Valle):
+                   Campo: "Plazo de Entrega" con valor tipo "año 2028 mes diciembre".
+                   → Ej: "año 2028 mes diciembre".
                    
-                   PATRÓN E — Tabla Anexo 1, sección "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO" (Altos del Prado / Finca Las Lomas):
-                   Campo: "Fecha de firma de contrato definitivo" seguido de una fecha como "treinta y uno de diciembre del 2027 (31/12/2027)"
-                   → Extrae la fecha completa. Ej: "31/12/2027"
-
-                   PATRÓN F — Cláusula SÉPTIMO (Pontevedra / Posesión):
-                   Texto similar a: "SEPTIMO: ENTREGA DE LA POSESIÓN ... entregará la posesión de LA ALICUOTA ... el [DIA] [MES] del [AÑO]"
-                   → Extrae la fecha completa. Ej: "30 diciembre del 2021"
+                   PATRÓN — Cláusula SÉPTIMO (Pontevedra / Posesión):
+                   Texto: "entregará la posesión de LA ALICUOTA ... el [DIA] [MES] del [AÑO]"
+                   → Ej: "30 diciembre del 2021"
                    
-                   ⚠️ NOTA: Sé flexible con "realizara" y "realizará".
-                   ⚠️ NOTA: Sé flexible con "SÉPTIMO" o "SEPTIMO".
-                   ⚠️ NOTA: Si una cláusula dice "se realizará en la fecha indicada en el ANEXO 1", busca el valor real en los cuadros del Anexo 1.
-                   ⚠️ NOTA: Si no encuentras ningún patrón, devuelve null. NUNCA inventes una fecha.
+                   ⚠️ IMPORTANTE: "Fecha de firma de contrato definitivo" en el cuadro del Anexo 1 NO es la suscripción de hoy, es la FECHA DE ENTREGA PACTADA.
+                   ⚠️ Si ves la palabra "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO", toma ese valor para este campo (fecha_pactada_entrega).
+                   ⚠️ Sé flexible con "SÉPTIMO", "SEPTIMO", "realizara" y "realizará".
+                   ⚠️ Si no encuentras ningún patrón real, devuelve null.
                    
                 6. PROPIETARIOS: Nombre y DNI del punto II del Anexo 1 (Información del Cliente). Lista TODOS los copropietarios que aparezcan.
                 
@@ -264,6 +262,11 @@ def extraer_con_vision_premium(ruta_pdf):
             "completion_tokens": completion_tokens,
             "total_cost_usd": round(total_cost, 5)
         }
+        
+        # Depuración: Ver respuesta de la IA
+        print("-" * 30)
+        print(f"  [DEBUG IA JSON] {json.dumps(resultado_json, indent=2)}")
+        print("-" * 30)
         
         return resultado_json
 
