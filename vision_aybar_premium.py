@@ -146,7 +146,12 @@ def extraer_con_vision_premium(ruta_pdf):
             "DE LA ENTREGA", "ENTREGA FÍSICA", "CONTRATO DEFINITIVO",
             "SÉPTIMO", "SEPTIMO", "POSESION", "POSESIÓN", "PLAZO",
             "VIGENCIA", "FIRMA DEL CONTRATO", "VIII", "VII", "VIVA NORTE",
-            "INFORMACIÓN GENERAL", "FECHA DE FIRMA", "DEFINITIVO"
+            "INFORMACIÓN GENERAL", "FECHA DE FIRMA", "DEFINITIVO",
+            "DENOMINACIÓN", "DENOMINACION", "ALICUOTA", "ALÍCUOTA",
+            "EL COMPRADOR", "EL VENDEDOR", "PREPARATORIO",
+            "COMPROMISO", "ADQUIRIENTE", "TRANSFIRIENTE", "CUARTA",
+            "PLAZO DE EJECUCIÓN", "PLAZO DE EJECUCION", "EJECUCIÓN DEL SERVICIO",
+            "SEXTA", "SÉPTIMA"
         ]
         
         for i, pag in enumerate(paginas_baja):
@@ -175,33 +180,46 @@ def extraer_con_vision_premium(ruta_pdf):
                 Tu misión es extraer datos con 100% de precisión.
                 
                 REGLAS DE EXTRACCIÓN (BASADAS EN MODELOS VISUALES DE AYBAR CORP):
-                1. PROYECTO: Nombre comercial visible en logo o encabezado (ej: ALTOS DEL PRADO, LUGO, LOTES DEL PERU, VIÑA DEL MAR, ALTOS DEL VALLE, FINCA LAS LOMAS).
-                2. MANZANA/LOTE: Punto V del Anexo 1 o Memoria Descriptiva.
-                3. ÁREA Y ALÍCUOTA: Sección 'MEMORIA DESCRIPTIVA' o Punto V del Anexo 1.
-                4. FECHA SUSCRIPCION: Donde están las firmas al final del documento (ej: "Lima, 10 de octubre de 2023") o en el encabezado.
-                5. FECHA ENTREGA (fecha_entrega) — CAMPO CRÍTICO. 
-                   Esta es la fecha pactada originalmente para la entrega. Existem múltiples patrones:
-                
-                   PATRÓN — Cuadro Anexo 1 - Sección VIII (Ej: FINCA LAS LOMAS, ALTOS DEL PRADO):
-                   Busca la tabla: "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO".
-                   A su derecha verás una fecha como: "treinta de junio del 2027 (30/06/2027)".
-                   → ¡ESTE VALOR ES LA fecha_entrega! Ej: "30/06/2027".
-                   
-                   PATRÓN — Cláusulas de formalización (Lugo, Viña, Prado):
-                   Texto similar a: "se realizara en [MES] de [AÑO]" o "a partir de [MES] de [AÑO]".
-                   → Extrae el valor temporal. Ej: "diciembre de 2024"
-                   
-                   PATRÓN — Cuadro Anexo 1 - Sección VII (Altos del Valle):
-                   Campo: "Plazo de Entrega" con valor tipo "año 2028 mes diciembre".
-                   → Ej: "año 2028 mes diciembre".
-                   
-                   PATRÓN — Cláusula SÉPTIMO (Pontevedra / Posesión):
-                   Texto: "entregará la posesión de LA ALICUOTA ... el [DIA] [MES] del [AÑO]"
-                   → Ej: "30 diciembre del 2021"
-                   
-                ⚠️ IMPORTANTE: En el modelo de FINCA LAS LOMAS, ignora las menciones de "Anexo 1" en la página 2 y busca directamente el CUADRO VIII al final.
-                ⚠️ "Fecha de firma de contrato definitivo" en el Anexo 1 NO es la suscripción de hoy, es la FECHA DE ENTREGA PACTADA.
-                ⚠️ Si no encuentras ningún patrón real, devuelve null.
+                 1. PROYECTO: 
+                    - Prioridad 1: Nombre del Condominio que aparece en la cláusula "OBJETO". Ej: "...del Condominio CAMTABRIA LAGOONS" -> Proyecto: "CAMTABRIA LAGOONS".
+                    - Prioridad 2: Nombre comercial en logo o encabezado (ej: ALTOS DEL PRADO, LUGO, LOTES DEL PERU, VIÑA DEL MAR, ALTOS DEL VALLE, FINCA LAS LOMAS).
+                    - ⚠️ IMPORTANTE: No confundir el nombre de la empresa "AYBAR CORP" con el nombre del proyecto.
+                 2. MANZANA/LOTE: 
+                    - Prioridad 1: Título o encabezado que diga "SUB-LOTE [MZ]-[LOTE]" o similar. Ej: "SUB-LOTE A-04" -> Manzana: "A", Lote: "04".
+                    - Prioridad 2: Cuadro bajo el título "DENOMINACIÓN" o "DENOMINACION". Si dice "A-04", Manzana es "A" y Lote es "04".
+                    - 🚫 REGLA CRÍTICA DE EXCLUSIÓN: JAMÁS uses datos que aparezcan en la sección "DATOS DEL CLIENTE" o "DIRECCIÓN COMÚN". Esos datos (ej: "MZ-K LT 23") corresponden a la casa actual del cliente, NO al lote que está comprando.
+                 3. ÁREA Y ALÍCUOTA: Sección 'MEMORIA DESCRIPTIVA' o Punto V del Anexo 1.
+                 4. FECHA SUSCRIPCION (fecha_suscripcion):
+                    - ⚠️ PRIORIDAD MÁXIMA: La fecha que acompaña a las firmas conjuntas de "EL COMPRADOR/ADQUIRIENTE" y "EL VENDEDOR/TRANSFERENTE" en el **Contrato Preparatorio original**.
+                    - 🚫 REGLA DE EXCLUSIÓN CRÍTICA: Ignora TOTALMENTE las fechas de una "ADENDA AL CONTRATO". La Adenda es un documento posterior; queremos la fecha del contrato que le dio origen.
+                    - 🚫 EXCLUSIÓN 2: Ignora títulos como "ACUERDO DE COMPRA", "SEPARACIÓN" o "MEMORIA DESCRIPTIVA".
+                 5. FECHA ENTREGA (fecha_entrega) — CAMPO CRÍTICO:
+                    - PATRÓN CLAUSULAR 1: Busca frases como "la entrega ... se realizará en [MES] del [AÑO]" o "entrega ... se realizará en [MES] de [AÑO]". Común en cláusula SEXTA o SÉPTIMA.
+                    - PATRÓN CLAUSULAR 2: Mención de "plazo máximo de [X] meses" bajo títulos como "PLAZO DE EJECUCIÓN". Muy común en modelos de "FORMALIZACION DE VIVIENDA".
+                    - PATRÓN SAN ANDRÉS/GENERAL: Cuadro VIII del Anexo 1 o fecha de formalización final.
+                    - PRIORIDAD: Prefiere un mes/año específico (ej: "diciembre de 2021") o un plazo (ej: "24 meses"). Evita usar la fecha de suscripción del contrato como fecha de entrega salvo que el contrato lo indique explícitamente.
+                    Esta es la fecha pactada originalmente para la entrega. Existem múltiples patrones:
+                 
+                    PATRÓN — Cuadro Anexo 1 - Sección VIII (Ej: FINCA LAS LOMAS, ALTOS DEL PRADO):
+                    Busca la tabla: "VIII. DE LA FIRMA DEL CONTRATO DEFINITIVO".
+                    A su derecha verás una fecha como: "treinta de junio del 2027 (30/06/2027)".
+                    → ¡ESTE VALOR ES LA fecha_entrega! Ej: "30/06/2027".
+                    
+                    PATRÓN — Cláusulas de formalización (Lugo, Viña, Prado):
+                    Texto similar a: "se realizara en [MES] de [AÑO]" o "a partir de [MES] de [AÑO]".
+                    → Extrae el valor temporal. Ej: "diciembre de 2024"
+                    
+                    PATRÓN — Cuadro Anexo 1 - Sección VII (Altos del Valle):
+                    Campo: "Plazo de Entrega" con valor tipo "año 2028 mes diciembre".
+                    → Ej: "año 2028 mes diciembre".
+                    
+                    PATRÓN — Cláusula SÉPTIMO (Pontevedra / Posesión):
+                    Texto: "entregará la posesión de LA ALICUOTA ... el [DIA] [MES] del [AÑO]"
+                    → Ej: "30 diciembre del 2021"
+                    
+                 ⚠️ IMPORTANTE: En el modelo de FINCA LAS LOMAS, ignora las menciones de "Anexo 1" en la página 2 y busca directamente el CUADRO VIII al final.
+                 ⚠️ "Fecha de firma de contrato definitivo" en el Anexo 1 NO es la suscripción de hoy, es la FECHA DE ENTREGA PACTADA.
+                 ⚠️ Si no encuentras ningún patrón real, devuelve null.
                 
                 6. PROPIETARIOS: Nombre y DNI del punto II del Anexo 1 (Información del Cliente). Lista TODOS los copropietarios.
                 
