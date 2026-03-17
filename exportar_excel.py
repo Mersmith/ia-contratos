@@ -69,10 +69,15 @@ def exportar_contratos_excel():
         fecha_str = datetime.now().strftime("%Y-%m-%d_%H-%M")
         nombre_excel = f"Reporte_Contratos_Aybar_{fecha_str}.xlsx"
         
-        # 5. Exportar a Excel
-        df.to_excel(nombre_excel, index=False, engine='openpyxl')
+        # 5. Carpeta de destino: reportes/ junto al script
+        carpeta_reportes = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reportes")
+        os.makedirs(carpeta_reportes, exist_ok=True)
+        ruta_excel = os.path.join(carpeta_reportes, nombre_excel)
         
-        print(f"✅ ¡Éxito! Reporte generado: {nombre_excel}")
+        # 6. Exportar a Excel
+        df.to_excel(ruta_excel, index=False, engine='openpyxl')
+        
+        print(f"✅ ¡Éxito! Reporte generado: {ruta_excel}")
         print(f"📊 Total de contratos exportados: {len(df)}")
         
         conn.close()
