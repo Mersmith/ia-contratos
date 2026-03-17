@@ -190,9 +190,9 @@ def extraer_con_vision_premium(ruta_pdf):
                     - 🚫 REGLA CRÍTICA DE EXCLUSIÓN: JAMÁS uses datos que aparezcan en la sección "DATOS DEL CLIENTE" o "DIRECCIÓN COMÚN". Esos datos (ej: "MZ-K LT 23") corresponden a la casa actual del cliente, NO al lote que está comprando.
                  3. ÁREA Y ALÍCUOTA: Sección 'MEMORIA DESCRIPTIVA' o Punto V del Anexo 1.
                  4. FECHA SUSCRIPCION (fecha_suscripcion):
-                    - ⚠️ PRIORIDAD MÁXIMA: La fecha que acompaña a las firmas conjuntas de "EL COMPRADOR/CLIENTE" y "EL VENDEDOR/INMOBILIARIA" en el **Contrato Preparatorio original** (suele estar al final de las cláusulas, cerca de 'DÉCIMA CUARTA' o similares).
-                    - 🚫 REGLA DE EXCLUSIÓN CRÍTICA: Ignora TOTALMENTE las fechas de una "ADENDA AL CONTRATO".
-                    - 🚫 EXCLUSIÓN 2: Ignora títulos como "HOJA DE NEGOCIACIÓN", "ACUERDO DE COMPRA", "SEPARACIÓN" o "MEMORIA DESCRIPTIVA". Estas son fechas preliminares, NO la fecha legal del contrato.
+                    - ⚠️ PRIORIDAD MÁXIMA: La fecha que acompaña a las firmas de "EL COMPRADOR" y "EL VENDEDOR" al final de las cláusulas del **Contrato Preparatorio** (antes de los anexos).
+                    - 🚫 REGLA DE EXCLUSIÓN CRÍTICA: Ignora TOTALMENTE las fechas en documentos titulados como "HOJA DE NEGOCIACIÓN", "ACUERDO DE SEPARACIÓN", "ACUERDO DE COMPRA" o "SEPARACIÓN".
+                    - 🚫 EXCLUSIÓN 2: Ignora fechas asociadas a firmas de "SOCIO COMERCIAL", "ASESOR COMERCIAL" o "ASESORA COMERCIAL". Queremos exclusivamente la fecha legal del contrato entre Comprador y Vendedor.
                  5. FECHA ENTREGA (fecha_entrega) — CAMPO CRÍTICO:
                     - PATRÓN CLAUSULAR 1: Busca frases como "la entrega ... se realizará en [MES] del [AÑO]" o "entrega ... se realizará en [MES] de [AÑO]". Común en cláusula SEXTA o SÉPTIMA.
                     - PATRÓN CLAUSULAR 2: Mención de "plazo máximo de [X] meses" bajo títulos como "PLAZO DE EJECUCIÓN". Muy común en modelos de "FORMALIZACION DE VIVIENDA".
@@ -217,7 +217,10 @@ def extraer_con_vision_premium(ruta_pdf):
                  ⚠️ "Fecha de firma de contrato definitivo" en el Anexo 1 NO es la suscripción de hoy, es la FECHA DE ENTREGA PACTADA.
                  ⚠️ Si no encuentras ningún patrón real, devuelve null.
                 
-                  6. PROPIETARIOS: Extrae el nombre completo tal cual aparece en el contrato, capturando AMBOS APELLIDOS y todos los nombres. Es CRÍTICO capturar la identidad legal íntegra y no omitir ninguna parte. No reordenes los apellidos a menos que el documento use explícitamente el formato 'Apellidos, Nombres'.
+                  6. PROPIETARIOS (CLIENTE/COMPRADOR): 
+                     - ⚠️ CASO PERSONA JURÍDICA: Si el cliente es una empresa (ej: E.I.R.L., S.A.C., S.A.), DEBES extraer el nombre de la Empresa y su **RUC**. Ignora totalmente los datos del representante legal (persona física) que suele aparecer después de la frase "debidamente representada por...".
+                     - ⚠️ CASO PERSONA NATURAL: Extrae el nombre completo tal cual aparece, capturando AMBOS APELLIDOS. 
+                     - Es CRÍTICO capturar la identidad legal íntegra del titular del contrato.
                 
                 FORMATO DE RESPUESTA JSON:
                 {
